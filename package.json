@@ -1,0 +1,8 @@
+{
+  "name": "nodejs-demo-app-runner",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.72.0",
+    "@aws-sdk/util-dynamodb": "^3.72.0",
+    "express": "^4.17.3"
+  }
+}
