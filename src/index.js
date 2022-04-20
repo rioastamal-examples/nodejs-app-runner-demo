@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 app.get('/ping', function(req, res) {
-  res.json({ message: 'pong' });
+  res.json('pong');
 });
 
 const port = process.env.NODE_PORT || 8080;
