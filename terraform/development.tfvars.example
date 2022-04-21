@@ -1,0 +1,15 @@
+# You can copy this file according to environment such as:
+# 'development.tfvars' or 'production.tfvars' and use command
+# 'terraform apply -var-file filename.tfvars' to apply the changes.
+app_name = "nodejs-api"
+app_env = "development"
+app_git_url = "YOUR_GITHUB_REPO_URL"
+app_token = "YOUR_TOKEN"
+app_branch = "development"
+app_port = "8080"
+region = "us-east-1"
+tags = {
+  env = "demo"
+  app = "nodejs-app-runner-demo"
+  fromTerraform = true
+}
