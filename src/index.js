@@ -25,6 +25,24 @@ app.use(express.json());
 class BadRequestError extends Error {}
 class NotFoundError extends Error {}
 
+function authAdminMiddleware(req, res, next) {
+  const authHeader = req.get('authorization') ? req.get('authorization').split(' ')[1] : undefined;
+  const token = authHeader || req.query.access_token || '';
+  
+  if (!token) {
+    res.status(401).send({ message: 'Missing API token.' });
+    return;
+  }
+  
+  console.log({ 'Token': token, 'appToken': appToken });
+  if (token !== appToken) {
+    res.status(401).send({ message: 'Token missmatch.' });
+    return;
+  }
+  
+  next();
+}
+
 async function queryExistingRecordsByGSI(params) {
   const paramAttributeValues = { ':sk': params.sk };
   const paramAttributeNames = {};
@@ -132,7 +150,7 @@ app.post('/users', async (req, res) => {
   }
 });
 
-app.put('/users/:id', async (req, res) => {
+app.put('/users/:id', authAdminMiddleware, async (req, res) => {
 try {
     const userId = req.params.id || '';
     
@@ -218,7 +236,7 @@ try {
 });
 
 // View a user endpoint
-app.get('/users/:id', async (req, res) => {
+app.get('/users/:id', authAdminMiddleware, async (req, res) => {
   try {
     const userId = req.params.id || '';
     
@@ -259,7 +277,7 @@ app.get('/users/:id', async (req, res) => {
   }
 });
 
-app.get('/users', async (req, res) => {
+app.get('/users', authAdminMiddleware, async (req, res) => {
   try {
     const email = req.query.email || '';
     const queryParam = {
