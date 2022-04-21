@@ -26,19 +26,29 @@ class BadRequestError extends Error {}
 class NotFoundError extends Error {}
 
 async function queryExistingRecordsByGSI(params) {
+  const paramAttributeValues = { ':sk': params.sk };
+  const paramAttributeNames = {};
+  const paramConditionExpression = [ 'sk = :sk ' ];
+  
+  if (params.data) {
+    paramAttributeValues[':data'] = params.data;
+    paramAttributeNames['#data'] = 'data';
+    paramConditionExpression.push('begins_with(#data, :data)');
+  }
+  
   const existingUserParam = {
     TableName: tableName,
     IndexName: 'data-index',
-    KeyConditionExpression: 'sk = :sk and begins_with(#data, :data)',
-    ExpressionAttributeNames: {
-      '#data': 'data'
-    },
-    ExpressionAttributeValues: marshall({
-      ':sk': params.sk,
-      ':data': params.data
-    }),
+    KeyConditionExpression: paramConditionExpression.join(' and '),
+    ExpressionAttributeValues: marshall(paramAttributeValues),
     Limit: params.limit || 1
   };
+  
+  if (params.data) {
+    existingUserParam['ExpressionAttributeNames'] = paramAttributeNames;
+  }
+  
+  console.log('existingUserParam =>', existingUserParam);
   const existingUserResponse = await ddbclient.send(new QueryCommand(existingUserParam));
   
   return existingUserResponse;
@@ -146,7 +156,7 @@ app.get('/users/:id', async (req, res) => {
     
     const userItem = unmarshall(userResponse.Item);
     res.json({
-      id: userItem.pk,
+      id: userItem.pk.replace('user#', ''),
       email: userItem.email,
       fullname: userItem.fullname,
       verified: userItem.verified,
@@ -168,8 +178,36 @@ app.get('/users/:id', async (req, res) => {
   }
 });
 
-app.get('/users', (req, res) => {
-  
+app.get('/users', async (req, res) => {
+  try {
+    const email = req.query.email || '';
+    const queryParam = {
+      sk: 'user',
+      limit: 50
+    };
+    if (email) { queryParam['data'] = decodeURIComponent(email); }
+    
+    const userResponse = await queryExistingRecordsByGSI(queryParam);
+    
+    const users = [];
+    for (let item of userResponse.Items) {
+      const userItem = unmarshall(item);
+      users.push({
+        id: userItem.pk.replace('user#', ''),
+        email: userItem.email,
+        fullname: userItem.fullname,
+        verified: userItem.verified,
+        created_at: userItem.created_at,
+        updated_at: userItem.updated_at
+      });
+    }
+    
+    res.json(users);
+  } catch (e) {
+    res.status(500).json({
+      message: e.toString()
+    });    
+  }
 });
 
 app.delete('/users/:id', (req, res) => {
