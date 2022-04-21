@@ -18,7 +18,14 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-app.get('/ping', function(req, res) {
+app.get('/', (req, res) => {
+  res.json({
+    app: 'Node.js Api Demo',
+    env: process.env.NODE_ENV || ''
+  })
+});
+
+app.get('/ping', (req, res) => {
   res.json('pong');
 });
 
