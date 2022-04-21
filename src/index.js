@@ -1,11 +1,11 @@
-const { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand } = require('@aws-sdk/client-dynamodb');
 const express = require("express");
 
 const app = express();
 const uuid = require('uuid');
 const ddbclient = new DynamoDBClient({ region: process.env.APP_REGION || 'us-east-1' });
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
-const tableName = process.env.APP_TABLE_NAME || 'astamal-serverless-demo-5zzpka';
+const tableName = process.env.APP_TABLE_NAME || '';
 const appToken = process.env.APP_TOKEN || '';
 
 // Allow CORS
@@ -132,8 +132,89 @@ app.post('/users', async (req, res) => {
   }
 });
 
-app.put('/users/:id', (req, res) => {
-  
+app.put('/users/:id', async (req, res) => {
+try {
+    const userId = req.params.id || '';
+    
+    const userParam = {
+      TableName: tableName,
+      Key: marshall({
+        pk: `user#${userId}`,
+        sk: 'user'
+      })
+    };
+    
+    const userResponse = await ddbclient.send(new GetItemCommand(userParam));
+    if (userResponse.Item === undefined) {
+      throw new NotFoundError('User id not found.');
+    }
+    
+    if (req.params.hasOwnProperty('verified') && typeof req.params.verified !== "boolean") {
+      throw new BadRequestError('Verified should be boolean true or false.');
+    }
+    
+    const userItem = unmarshall(userResponse.Item);
+    const fullname = req.body.fullname || userItem.fullname;
+    const verified = req.body.verified || userItem.verified;
+    const now = new Date().toISOString();
+    
+    const updateExpression = [
+      '#fullname = :fullname',
+      '#verified = :verified',
+      '#updated_at = :updated_at',
+    ];
+    const expressionAttributes = {
+      '#fullname': 'fullname',
+      '#verified': 'verified',
+      '#updated_at': 'updated_at'
+    };
+    const expressionValues = {
+      ':fullname': fullname,
+      ':verified': verified,
+      ':updated_at': now
+    }
+    
+    if (verified === true) {
+      updateExpression.push('#verified_date = :verified_date');
+      expressionAttributes['#verified_date'] = 'verified_date';
+      expressionValues[':verified_date'] = now;
+    }
+    
+    const updateUserParam = {
+      TableName: tableName,
+      Key: marshall({
+        pk: userItem.pk,
+        sk: 'user'
+      }),
+      UpdateExpression: 'SET ' + updateExpression.join(','),
+      ExpressionAttributeNames: expressionAttributes,
+      ExpressionAttributeValues: marshall(expressionValues)
+    };
+    
+    console.log('updateUserParam =>', updateUserParam);
+    await ddbclient.send(new UpdateItemCommand(updateUserParam));
+    
+    res.json({
+      id: userItem.pk.replace('user#', ''),
+      email: userItem.email,
+      fullname: fullname,
+      verified: verified,
+      created_at: userItem.created_at,
+      updated_at: now
+    });
+  } catch (e) {
+    if (e instanceof NotFoundError) {
+      res.status(404).json({
+        message: e.toString()
+      });
+      
+      return;      
+    }
+    
+    res.status(500).json({
+      message: e.toString()
+    });
+  }  
 });
 
 // View a user endpoint
