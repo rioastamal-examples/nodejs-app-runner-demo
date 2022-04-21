@@ -23,6 +23,7 @@ app.use(express.json());
 
 // Custom error
 class BadRequestError extends Error {}
+class NotFoundError extends Error {}
 
 async function queryExistingRecordsByGSI(params) {
   const existingUserParam = {
@@ -43,6 +44,7 @@ async function queryExistingRecordsByGSI(params) {
   return existingUserResponse;
 }
 
+// Create new user endpoint
 app.post('/users', async (req, res) => {
   const email = req.body.email || '';
   const fullname = req.body.fullname || '';
@@ -124,7 +126,49 @@ app.put('/users/:id', (req, res) => {
   
 });
 
-app.get('/users/:id', (req, res) => {
+// View a user endpoint
+app.get('/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id || '';
+    
+    const userParam = {
+      TableName: tableName,
+      Key: marshall({
+        pk: `user#${userId}`,
+        sk: 'user'
+      })
+    };
+    
+    const userResponse = await ddbclient.send(new GetItemCommand(userParam));
+    if (userResponse.Item === undefined) {
+      throw new NotFoundError('User id not found.');
+    }
+    
+    const userItem = unmarshall(userResponse.Item);
+    res.json({
+      id: userItem.pk,
+      email: userItem.email,
+      fullname: userItem.fullname,
+      verified: userItem.verified,
+      created_at: userItem.created_at,
+      updated_at: userItem.updated_at
+    });
+  } catch (e) {
+    if (e instanceof NotFoundError) {
+      res.status(404).json({
+        message: e.toString()
+      });
+      
+      return;      
+    }
+    
+    res.status(500).json({
+      message: e.toString()
+    });
+  }
+});
+
+app.get('/users', (req, res) => {
   
 });
 
