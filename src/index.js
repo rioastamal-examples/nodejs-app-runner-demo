@@ -7,7 +7,7 @@ const ddbclient = new DynamoDBClient({ region: process.env.APP_REGION || 'us-eas
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 const tableName = process.env.APP_TABLE_NAME || '';
 const appToken = process.env.APP_TOKEN || '';
-const appVersion = '1.0';
+const appVersion = '1.0.1';
 
 // Allow CORS
 app.use((req, res, next) => {
@@ -316,7 +316,7 @@ app.delete('/users/:id', (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({
-    app: 'Node.js Api Demo',
+    app: 'Node.js Api Demo Jumat',
     version: appVersion,
     env: process.env.NODE_ENV || ''
   });
