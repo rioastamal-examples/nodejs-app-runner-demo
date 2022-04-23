@@ -1,4 +1,4 @@
-const { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, UpdateItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb');
 const express = require("express");
 
 const app = express();
@@ -310,7 +310,56 @@ app.get('/users', authAdminMiddleware, async (req, res) => {
   }
 });
 
-app.delete('/users/:id', (req, res) => {
+app.delete('/users/:id', authAdminMiddleware, async (req, res) => {
+  try {
+    const userId = req.params.id || '';
+    
+    const userParam = {
+      TableName: tableName,
+      Key: marshall({
+        pk: `user#${userId}`,
+        sk: 'user'
+      })
+    };
+    
+    const userResponse = await ddbclient.send(new GetItemCommand(userParam));
+    if (userResponse.Item === undefined) {
+      throw new NotFoundError('User id not found.');
+    }
+    
+    
+    const userItem = unmarshall(userResponse.Item);
+    
+    const deleteUserParam = {
+      TableName: tableName,
+      Key: marshall({
+        pk: userItem.pk,
+        sk: 'user'
+      }),
+    };
+    
+    console.log('deleteUserParam =>', deleteUserParam);
+    const cmdDeleteItemCommand = new DeleteItemCommand(deleteUserParam);
+    await ddbclient.send(cmdDeleteItemCommand);
+    
+    res.json({
+      id: userItem.pk.replace('user#', ''),
+      deleted_at: now
+    });
+  } catch (e) {
+    if (e instanceof NotFoundError) {
+      res.status(404).json({
+        message: e.toString()
+      });
+      
+      return;      
+    }
+    
+    res.status(500).json({
+      message: e.toString()
+    });
+  }  
+
   
 });
 
