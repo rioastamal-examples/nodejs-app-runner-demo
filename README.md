@@ -8,6 +8,12 @@ The sample API is a simple API that doing CRUD to users data that stored in Amaz
 
 This repo shows you how to deploy from GitHub repository. If you want example how to deploy using Container image please refer to [golang-app-runner-demo](https://github.com/rioastamal-examples/golang-app-runner-demo) repository.
 
+## Presentation
+
+You can watch my talk at AWS User Group Medan about how to deploy Node.js API on AWS App Runner. The talk is in Bahasa Indonesia.
+
+[![Watch the video](https://img.youtube.com/vi/RRf4TbcozWg/hqdefault.jpg)](https://youtu.be/RRf4TbcozWg)
+
 ## Requirements
 
 This project has been tested using following softwares version, but it should works with other version too.
