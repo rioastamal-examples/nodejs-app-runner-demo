@@ -342,10 +342,7 @@ app.delete('/users/:id', authAdminMiddleware, async (req, res) => {
     const cmdDeleteItemCommand = new DeleteItemCommand(deleteUserParam);
     await ddbclient.send(cmdDeleteItemCommand);
     
-    res.json({
-      id: userItem.pk.replace('user#', ''),
-      deleted_at: now
-    });
+    res.status(204);
   } catch (e) {
     if (e instanceof NotFoundError) {
       res.status(404).json({
@@ -365,7 +362,7 @@ app.delete('/users/:id', authAdminMiddleware, async (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({
-    app: 'Node.js Api Demo Jumat',
+    app: 'Node.js Api Demo',
     version: appVersion,
     env: process.env.NODE_ENV || ''
   });
