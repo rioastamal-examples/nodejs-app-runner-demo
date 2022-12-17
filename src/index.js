@@ -369,7 +369,8 @@ app.get('/', (req, res) => {
 });
 
 app.get('/ping', (req, res) => {
-  res.json('pong');
+  const now = new Date();
+  res.json('pong ' + now);
 });
 
 const port = process.env.NODE_PORT || 8080;
